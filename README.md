@@ -99,3 +99,33 @@ This project is also meant as a sandbox to practice:
 ## Getting Started
 
 > ⚠️ Work in progress. Instructions will be updated as the project evolves.
+
+
+## Backend – Local Development
+
+### Requirements
+- Python 3.12+
+
+### Setup
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate   # Windows: .\.venv\Scripts\activate
+pip install -r requirements.txt
+
+```
+
+## Run backend
+```bash
+cd backend
+uvicorn app.main:app --reload
+
+```
+
+## Run tests
+```bash
+cd backend
+pytest
+
+```

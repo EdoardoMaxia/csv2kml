@@ -1,5 +1,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
+if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
+
+
 export async function csvPreview(file: File, maxRows = 20) {
     const fd = new FormData();
     fd.append("file", file);

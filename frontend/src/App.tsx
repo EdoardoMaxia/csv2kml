@@ -1,24 +1,11 @@
 import { useMemo, useState } from "react";
-import { csvPreview, generateKmlPoints } from "./api";
-
-type Preview = {
-  filename: string;
-  headers: string[];
-  rows: string[][];
-  max_rows: number;
-  detected_delimiter: string;
-};
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+import type { PointsMapping, Preview } from "./types/csv2kml";
+import { csvPreview, generateKmlPoints } from "./api/csv2kml";
+import { downloadBlob } from "./utils/download";
+import { FileUpload } from "./components/FileUpload";
+import { ErrorBanner } from "./components/ErrorBanner";
+import { MappingForm } from "./components/MappingForm";
+import { CsvPreviewTable } from "./components/CsvPreviewTable";
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -29,7 +16,7 @@ export default function App() {
   const [lonCol, setLonCol] = useState("");
   const [descCols, setDescCols] = useState<string[]>([]);
 
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingKml, setLoadingKml] = useState(false);
 
@@ -53,15 +40,17 @@ export default function App() {
       const p = await csvPreview(f, 20);
       setPreview(p);
 
-      // small convenience: auto-select if common names exist
-      const lower = p.headers.map((h) => h.toLowerCase());
+      // Auto-pick common headers
+      const lower = p.headers.map((h) => h.toLocaleLowerCase());
       const pick = (candidates: string[]) => {
         const idx = lower.findIndex((h) => candidates.includes(h));
         return idx >= 0 ? p.headers[idx] : "";
       };
 
       setNameCol(
-        pick(["name", "nome", "point", "punto"]) || p.headers[0] || ""
+        pick(["name", "nome", "point", "punto", "node", "nodo"]) ||
+          p.headers[0] ||
+          ""
       );
       setLatCol(pick(["lat", "latitude", "latitudine"]));
       setLonCol(pick(["lon", "lng", "longitude", "longitudine"]));
@@ -76,7 +65,7 @@ export default function App() {
     if (!file) return;
     setError("");
 
-    const mapping = {
+    const mapping: PointsMapping = {
       name_col: nameCol,
       lat_col: latCol,
       lon_col: lonCol,
@@ -108,173 +97,37 @@ export default function App() {
         Upload a CSV → preview → map columns → download KML.
       </p>
 
-      <div
-        style={{
-          display: "flex",
-          gap: 16,
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <input
-          type="file"
-          accept=".csv,text/csv"
-          onChange={(e) => onSelectFile(e.target.files?.[0] ?? null)}
-        />
-        {loadingPreview && <span>Loading preview…</span>}
-      </div>
+      <FileUpload onSelectFile={onSelectFile} loading={loadingPreview} />
 
-      {error && (
-        <div
-          style={{
-            padding: 12,
-            background: "#ffecec",
-            border: "1px solid #ffb3b3",
-            marginBottom: 16,
-          }}
-        >
-          <b>Error:</b> {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       {preview && (
         <>
           <div style={{ marginBottom: 12, color: "#555" }}>
-            <b>File:</b> {preview.filename} — <b>Delimiter:</b>{" "}
+            <b>File:</b> {preview.filename} - <b>Delimiter:</b>{" "}
             {preview.detected_delimiter}
           </div>
-
-          {/* Mapping form */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 12,
-              marginBottom: 16,
-            }}
-          >
-            <label>
-              Name column
-              <select
-                value={nameCol}
-                onChange={(e) => setNameCol(e.target.value)}
-                style={{ width: "100%" }}
-              >
-                <option value="">-- select --</option>
-                {preview.headers.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Latitude column
-              <select
-                value={latCol}
-                onChange={(e) => setLatCol(e.target.value)}
-                style={{ width: "100%" }}
-              >
-                <option value="">-- select --</option>
-                {preview.headers.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Longitude column
-              <select
-                value={lonCol}
-                onChange={(e) => setLonCol(e.target.value)}
-                style={{ width: "100%" }}
-              >
-                <option value="">-- select --</option>
-                {preview.headers.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label>
-              Description columns (optional)
-              <select
-                multiple
-                value={descCols}
-                onChange={(e) => {
-                  const opts = Array.from(e.target.selectedOptions).map(
-                    (o) => o.value
-                  );
-                  setDescCols(opts);
-                }}
-                style={{ width: "100%", height: 120 }}
-              >
-                {preview.headers.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div style={{ color: "#777", marginTop: 6 }}>
-              Hold <b>Ctrl</b> (Windows) / <b>Cmd</b> (Mac) to select multiple.
-            </div>
-          </div>
+          <MappingForm
+            headers={preview.headers}
+            nameCol={nameCol}
+            latCol={latCol}
+            lonCol={lonCol}
+            descCols={descCols}
+            onChangeName={setNameCol}
+            onChangeLat={setLatCol}
+            onChangeLon={setLonCol}
+            onChangeDescCols={setDescCols}
+          />
 
           <button
             onClick={onGenerateKml}
             disabled={!canGenerate || loadingKml}
             style={{ padding: "10px 16px" }}
           >
-            {loadingKml ? "Generating…" : "Generate KML"}
+            {loadingKml ? "Generating..." : "Generate KML"}
           </button>
 
-          {/* Preview table */}
-          <h2 style={{ marginTop: 24 }}>Preview</h2>
-          <div style={{ overflowX: "auto", border: "1px solid #ddd" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  {preview.headers.map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: "left",
-                        padding: 8,
-                        borderBottom: "1px solid #ddd",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {preview.rows.map((row, idx) => (
-                  <tr key={idx}>
-                    {preview.headers.map((_, cidx) => (
-                      <td
-                        key={cidx}
-                        style={{
-                          padding: 8,
-                          borderBottom: "1px solid #f0f0f0",
-                        }}
-                      >
-                        {row[cidx] ?? ""}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <CsvPreviewTable headers={preview.headers} rows={preview.rows} />
         </>
       )}
     </div>

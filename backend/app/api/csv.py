@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Any
+from typing import Any, Union, Type
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 router = APIRouter(prefix="/csv", tags=["CSV"])
 
-def _detect_dialect(sample: str) -> csv.Dialect:
+def _detect_dialect(sample: str) -> Union[csv.Dialect, Type[csv.Dialect]]:
     """
     Tries to detect CSV delimiter/quoting using a small sample.
     Falls back to Excel dialect if detection fails.

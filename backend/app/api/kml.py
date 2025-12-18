@@ -3,17 +3,20 @@ from __future__ import annotations
 import csv
 import io
 import json
-from typing import Any
+import re
+from typing import Any, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app.api.csv import _detect_dialect
-from app.kml.builder import KmlPoint, build_kml_points
+from app.kml.builder import KmlPoint, KmlPointStyle, build_kml_points
+
 
 router = APIRouter(prefix="/kml", tags=["KML"])
 
+_HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 class PointsMapping(BaseModel):
     name_col: str = Field(..., min_length=1)
@@ -21,7 +24,9 @@ class PointsMapping(BaseModel):
     lon_col: str = Field(..., min_length=1)
     description_cols: list[str] = Field(default_factory=list)
 
-
+    icon_url: Optional[str] = None
+    icon_scale: float = 1.0
+    icon_color: Optional[str] = None    #expect "#RRGGBB"
 
 def _parse_mapping(mapping_raw: str) -> PointsMapping:
     try:
@@ -34,6 +39,23 @@ def _parse_mapping(mapping_raw: str) -> PointsMapping:
     except Exception as e:
         raise HTTPException(status_code=400, detail="Invalid mapping schema") from e
     
+
+def _hex_to_kml_color(hex_rgb: str) -> str:
+    """
+    Converts #RRGGBB to KML color format aabbggrr.
+    We'll use full opacity (aa == ff).
+    """
+    if not _HEX_COLOR_RE.match(hex_rgb):
+        raise HTTPException(status_code=400, detail="icon_color must be in format #RRGGBB")
+
+    hex_rgb = hex_rgb.lower()
+
+    rr = hex_rgb[1:3]
+    gg = hex_rgb[3:5]
+    bb = hex_rgb[5:7]
+    aa = "ff"
+
+    return f"{aa}{bb}{gg}{rr}"
 
 @router.post("/points")
 async def kml_points(
@@ -114,7 +136,22 @@ async def kml_points(
 
         points.append(KmlPoint(name=name, lat=lat, lon=lon, description_html=description))
     
-    kml = build_kml_points(document_name=file.filename or "csv2kml", points=points)
+    style = None
+    if mapping_obj.icon_url or mapping_obj.icon_color or mapping_obj.icon_scale != 1.0:
+        kml_color = _hex_to_kml_color(mapping_obj.icon_color) if mapping_obj.icon_color else None
+
+        # basic scale validation
+        if mapping_obj.icon_scale <= 0 or mapping_obj.icon_scale > 10:
+            raise HTTPException(status_code=400, detail="icon_scale must be between 0 and 10")
+        
+        style = KmlPointStyle(
+            style_id="pointStyle",
+            icon_url=mapping_obj.icon_url,
+            icon_scale=mapping_obj.icon_scale,
+            icon_color=kml_color,
+        )
+
+    kml = build_kml_points(document_name=file.filename or "csv2kml", points=points, style=style)
 
     out_name = (file.filename or "points.csv").rsplit(".", 1)[0] + ".kml"
 

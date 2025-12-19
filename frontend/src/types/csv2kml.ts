@@ -16,4 +16,18 @@ export type PointsMapping = {
     icon_url?: string;
     icon_scale?: number; // default 1.0 if omitted
     icon_color?: string; // "#RRGGBB"
-}
+};
+
+
+export type LinksMapping = {
+    a_lat_col: string;
+    a_lon_col: string;
+    b_lat_col: string;
+    b_lon_col: string;
+
+    link_name_col?: string;
+    description_cols: string[];
+
+    line_color?: string; // "#RRGGBB"
+    line_width?: number; // default 2.0
+};

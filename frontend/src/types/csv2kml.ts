@@ -12,4 +12,8 @@ export type PointsMapping = {
     lat_col: string;
     lon_col: string;
     description_cols: string[];
+
+    icon_url?: string;
+    icon_scale?: number; // default 1.0 if omitted
+    icon_color?: string; // "#RRGGBB"
 }

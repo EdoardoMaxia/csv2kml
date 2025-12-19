@@ -7,6 +7,10 @@ import { ErrorBanner } from "./components/ErrorBanner";
 import { MappingForm } from "./components/MappingForm";
 import { CsvPreviewTable } from "./components/CsvPreviewTable";
 
+function isValidHexColor(v: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(v);
+}
+
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -15,6 +19,10 @@ export default function App() {
   const [latCol, setLatCol] = useState("");
   const [lonCol, setLonCol] = useState("");
   const [descCols, setDescCols] = useState<string[]>([]);
+
+  const [iconUrl, setIconUrl] = useState("");
+  const [iconScale, setIconScale] = useState<number>(1.0);
+  const [iconColor, setIconColor] = useState("##00AAFF");
 
   const [error, setError] = useState("");
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -31,6 +39,9 @@ export default function App() {
     setLatCol("");
     setLonCol("");
     setDescCols([]);
+    setIconUrl("");
+    setIconScale(1.0);
+    setIconColor("#00AAFF");
     setFile(f);
 
     if (!f) return;
@@ -70,7 +81,23 @@ export default function App() {
       lat_col: latCol,
       lon_col: lonCol,
       description_cols: descCols,
+      icon_url: iconUrl,
+      icon_scale: iconScale,
+      icon_color: iconColor,
     };
+
+    // Add styling only if user set something meaningful (keeps backqard compatibility)
+    const trimmedUrl = iconUrl.trim();
+    if (trimmedUrl) mapping.icon_url = trimmedUrl;
+
+    if (iconScale <= 0 || iconScale > 10) {
+      setError("icon_scale must be between 0 and 10");
+      return;
+    }
+    if (iconColor && !isValidHexColor(iconColor)) {
+      setError("icon_color must be in format #RRGGBB");
+      return;
+    }
 
     try {
       setLoadingKml(true);
@@ -117,6 +144,12 @@ export default function App() {
             onChangeLat={setLatCol}
             onChangeLon={setLonCol}
             onChangeDescCols={setDescCols}
+            iconUrl={iconUrl}
+            iconColor={iconColor}
+            iconScale={iconScale}
+            onChangeIconUrl={setIconUrl}
+            onChangeIconColor={setIconColor}
+            onChangeIconScale={setIconScale}
           />
 
           <button

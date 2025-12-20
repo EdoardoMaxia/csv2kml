@@ -30,6 +30,24 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { googleEarthIcons } from "./constants/icons";
+
+// opzionale: se usi lucide-react già presente in shadcn stack
+import {
+  Upload,
+  Table,
+  MapPin,
+  Share2,
+  Network,
+  Download,
+  Sparkles,
+  Info,
+} from "lucide-react";
 
 function isValidHexColor(v: string) {
   return /^#[0-9a-fA-F]{6}$/.test(v);
@@ -55,7 +73,7 @@ export default function App() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingKml, setLoadingKml] = useState(false);
 
-  // Tabs (single source of truth, used by shadcn Tabs)
+  // Tabs
   const [activeTab, setActiveTab] = useState<"points" | "links" | "graph">(
     "points"
   );
@@ -299,7 +317,6 @@ export default function App() {
         return;
       }
 
-      // graph
       const graphMapping: GraphMapping = {
         points: {
           nodes: [graphNodeA, graphNodeB],
@@ -337,163 +354,503 @@ export default function App() {
     ? "Generate Links KML"
     : "Generate Graph KML";
 
+  const activeMeta = useMemo(() => {
+    if (!preview) return null;
+    if (activeTab === "points") {
+      return {
+        title: "Points",
+        icon: <MapPin className="h-4 w-4" />,
+        ready: canGeneratePoints,
+        hint: "Name + Lat + Lon are required.",
+      };
+    }
+    if (activeTab === "links") {
+      return {
+        title: "Links",
+        icon: <Share2 className="h-4 w-4" />,
+        ready: canGenerateLinks,
+        hint: "Both endpoints A/B must have Lat/Lon.",
+      };
+    }
+    return {
+      title: "Graph",
+      icon: <Network className="h-4 w-4" />,
+      ready: canGenerateGraph,
+      hint: "Requires Nodes A/B + Links mapping.",
+    };
+  }, [
+    activeTab,
+    preview,
+    canGeneratePoints,
+    canGenerateLinks,
+    canGenerateGraph,
+  ]);
+
   return (
-    <div className="mx-auto max-w-5xl p-6">
-      <div className="mb-2 text-2xl font-semibold">csv2kml</div>
-      <div className="mb-6 text-sm text-muted-foreground">
-        Upload a CSV → preview → map columns → download KML.
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-amber-50/40 text-slate-900">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-12 top-12 h-72 w-72 rounded-full bg-cyan-200/50 blur-3xl" />
+        <div className="absolute bottom-[-140px] right-[-60px] h-96 w-96 rounded-full bg-amber-200/50 blur-[140px]" />
       </div>
 
-      <FileUpload onSelectFile={onSelectFile} loading={loadingPreview} />
-      <ErrorBanner message={error} />
-
-      {preview && (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle className="text-lg">Mapping</CardTitle>
-            <CardDescription>
-              <span className="font-medium">File:</span> {preview.filename}
-              <span className="mx-2">•</span>
-              <span className="font-medium">Delimiter:</span>{" "}
-              {preview.detected_delimiter}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <Tabs
-              value={activeTab}
-              onValueChange={(v) =>
-                setActiveTab(v as "points" | "links" | "graph")
-              }
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="points">Points</TabsTrigger>
-                <TabsTrigger value="links">Links</TabsTrigger>
-                <TabsTrigger value="graph">Graph</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="points" className="mt-4">
-                <MappingForm
-                  headers={preview.headers}
-                  nameCol={nameCol}
-                  latCol={latCol}
-                  lonCol={lonCol}
-                  descCols={descCols}
-                  onChangeName={setNameCol}
-                  onChangeLat={setLatCol}
-                  onChangeLon={setLonCol}
-                  onChangeDescCols={setDescCols}
-                  iconUrl={iconUrl}
-                  iconColor={iconColor}
-                  iconScale={iconScale}
-                  onChangeIconUrl={setIconUrl}
-                  onChangeIconColor={setIconColor}
-                  onChangeIconScale={setIconScale}
-                />
-              </TabsContent>
-
-              <TabsContent value="links" className="mt-4">
-                <LinksMappingForm
-                  headers={preview.headers}
-                  mapping={linksMapping}
-                  onChange={setLinksMapping}
-                />
-              </TabsContent>
-
-              <TabsContent value="graph" className="mt-4 space-y-6">
-                <div className="text-sm text-muted-foreground">
-                  Configure <span className="font-medium">Point A</span>,{" "}
-                  <span className="font-medium">Point B</span> and{" "}
-                  <span className="font-medium">Links</span>, then generate a
-                  single combined KML.
-                </div>
-
-                <GraphNodesForm
-                  headers={preview.headers}
-                  nodeA={graphNodeA}
-                  nodeB={graphNodeB}
-                  onChangeNodeA={setGraphNodeA}
-                  onChangeNodeB={setGraphNodeB}
-                />
-
-                <div className="rounded-lg border p-4">
-                  <div className="mb-3 font-medium">
-                    Point styling (optional)
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <label className="space-y-1">
-                      <div className="text-sm font-medium">Icon URL</div>
-                      <input
-                        className="h-9 w-full rounded-md border px-3"
-                        type="url"
-                        placeholder="https://.../icon.png"
-                        value={iconUrl}
-                        onChange={(e) => setIconUrl(e.target.value)}
-                      />
-                    </label>
-
-                    <label className="space-y-1">
-                      <div className="text-sm font-medium">Scale</div>
-                      <input
-                        className="h-9 w-full rounded-md border px-3"
-                        type="number"
-                        min={0.1}
-                        max={10}
-                        step={0.1}
-                        value={iconScale}
-                        onChange={(e) => setIconScale(Number(e.target.value))}
-                      />
-                    </label>
-
-                    <label className="space-y-1">
-                      <div className="text-sm font-medium">Color</div>
-                      <input
-                        className="h-9 w-full rounded-md border px-3"
-                        type="color"
-                        value={iconColor}
-                        onChange={(e) => setIconColor(e.target.value)}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <LinksMappingForm
-                  headers={preview.headers}
-                  mapping={linksMapping}
-                  onChange={setLinksMapping}
-                />
-                <DedupeControls value={dedupe} onChange={setDedupe} />
-              </TabsContent>
-            </Tabs>
-
+      <div className="relative">
+        {/* top app bar */}
+        <div className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
             <div className="flex items-center gap-3">
-              <Button onClick={onGenerate} disabled={buttonDisabled}>
-                {buttonLabel}
-              </Button>
-              <div className="text-sm text-muted-foreground">
-                Output will be downloaded as a{" "}
-                <span className="font-medium">.kml</span> file.
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white shadow-lg ring-1 ring-slate-100">
+                <Sparkles className="h-5 w-5 text-cyan-600" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-xs uppercase tracking-[0.28em] text-slate-500">
+                  csv to kml
+                </div>
+                <div className="text-lg font-semibold tracking-tight text-slate-900">
+                  Spatial toolkit
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {preview && (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle className="text-lg">Preview</CardTitle>
-            <CardDescription>First rows from the uploaded CSV.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <CsvPreviewTable headers={preview.headers} rows={preview.rows} />
+            <div className="hidden items-center gap-2 md:flex">
+              <Badge
+                variant="secondary"
+                className="gap-1 border border-slate-200 bg-white text-slate-700"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Upload
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="gap-1 border border-slate-200 bg-white text-slate-700"
+              >
+                <Table className="h-3.5 w-3.5" />
+                Preview
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="gap-1 border border-slate-200 bg-white text-slate-700"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl px-6 py-8 space-y-6">
+          {/* hero */}
+          <Card className="rounded-3xl border-none bg-white/80 shadow-xl ring-1 ring-slate-100">
+            <CardHeader className="space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
+                Guided workflow
+              </div>
+              <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900">
+                Convert your CSV into a styled KML in minutes
+              </CardTitle>
+              <CardDescription className="max-w-3xl text-slate-600">
+                Upload a CSV, map columns once, and export KML for Google Earth
+                or any GIS workflow. A calmer layout with clear steps and muted
+                cards keeps everything readable.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="text-sm font-medium">1) Upload CSV</div>
+                  <FileUpload
+                    onSelectFile={onSelectFile}
+                    loading={loadingPreview}
+                  />
+                  {error ? (
+                    <ErrorBanner message={error} />
+                  ) : (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Tip</AlertTitle>
+                      <AlertDescription>
+                        Headers are auto-detected. You can still override
+                        mappings in the next step.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="text-sm font-medium">2) Status</div>
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="text-sm text-muted-foreground">
+                          File
+                        </div>
+                        <div className="font-medium">
+                          {preview?.filename ?? "No file selected"}
+                        </div>
+                        <div className="text-sm text-slate-600 font-mono">
+                          {preview
+                            ? `Delimiter: ${preview.detected_delimiter} | Headers: ${preview.headers.length}`
+                            : "Upload a CSV to start."}
+                        </div>
+                      </div>
+
+                      {preview ? (
+                        <Badge className="gap-1" variant="secondary">
+                          Ready
+                        </Badge>
+                      ) : (
+                        <Badge className="gap-1" variant="outline">
+                          Waiting
+                        </Badge>
+                      )}
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          Points mapping
+                        </span>
+                        <span
+                          className={
+                            canGeneratePoints
+                              ? "font-medium"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {canGeneratePoints ? "OK" : "Missing fields"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          Links mapping
+                        </span>
+                        <span
+                          className={
+                            canGenerateLinks
+                              ? "font-medium"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {canGenerateLinks ? "OK" : "Missing fields"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          Graph mapping
+                        </span>
+                        <span
+                          className={
+                            canGenerateGraph
+                              ? "font-medium"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {canGenerateGraph ? "OK" : "Missing fields"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* workspace */}
+          {preview && (
+            <div className="grid gap-6 lg:grid-cols-[1fr_700px]">
+              {/* left: mapping */}
+              <Card className="rounded-3xl border-none bg-white/80 shadow-xl ring-1 ring-slate-100">
+                <CardHeader className="space-y-2">
+                  <CardTitle className="text-lg font-semibold text-slate-900">
+                    Mapping workspace
+                  </CardTitle>
+                  <CardDescription className="text-slate-600">
+                    Choose your target (Points / Links / Graph), map columns,
+                    then export.
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={(v) =>
+                      setActiveTab(v as "points" | "links" | "graph")
+                    }
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-3 rounded-xl bg-slate-100 p-1">
+                      <TabsTrigger
+                        value="points"
+                        className="rounded-lg data-[state=active]:bg-background"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <MapPin className="h-4 w-4" /> Points
+                        </span>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="links"
+                        className="rounded-lg data-[state=active]:bg-background"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Share2 className="h-4 w-4" /> Links
+                        </span>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="graph"
+                        className="rounded-lg data-[state=active]:bg-background"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Network className="h-4 w-4" /> Graph
+                        </span>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="points" className="mt-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-semibold">Points</div>
+                        <Badge
+                          variant={canGeneratePoints ? "secondary" : "outline"}
+                        >
+                          {canGeneratePoints ? "Ready" : "Needs mapping"}
+                        </Badge>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                        <MappingForm
+                          headers={preview.headers}
+                          nameCol={nameCol}
+                          latCol={latCol}
+                          lonCol={lonCol}
+                          descCols={descCols}
+                          onChangeName={setNameCol}
+                          onChangeLat={setLatCol}
+                          onChangeLon={setLonCol}
+                          onChangeDescCols={setDescCols}
+                          iconUrl={iconUrl}
+                          iconColor={iconColor}
+                          iconScale={iconScale}
+                          onChangeIconUrl={setIconUrl}
+                          onChangeIconColor={setIconColor}
+                          onChangeIconScale={setIconScale}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="links" className="mt-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-semibold">Links</div>
+                        <Badge
+                          variant={canGenerateLinks ? "secondary" : "outline"}
+                        >
+                          {canGenerateLinks ? "Ready" : "Needs mapping"}
+                        </Badge>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 shadow-inner">
+                        <LinksMappingForm
+                          headers={preview.headers}
+                          mapping={linksMapping}
+                          onChange={setLinksMapping}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="graph" className="mt-5 space-y-6">
+                      <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 text-sm text-muted-foreground">
+                        Configure <span className="font-medium">Node A</span>,{" "}
+                        <span className="font-medium">Node B</span>, and{" "}
+                        <span className="font-medium">Links</span>, then export
+                        a single combined KML.
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-semibold">Nodes</div>
+                          <Badge
+                            variant={canGenerateGraph ? "secondary" : "outline"}
+                          >
+                            {canGenerateGraph ? "Ready" : "Incomplete"}
+                          </Badge>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                          <GraphNodesForm
+                            headers={preview.headers}
+                            nodeA={graphNodeA}
+                            nodeB={graphNodeB}
+                            onChangeNodeA={setGraphNodeA}
+                            onChangeNodeB={setGraphNodeB}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="text-sm font-semibold">Links</div>
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                        <LinksMappingForm
+                            headers={preview.headers}
+                            mapping={linksMapping}
+                            onChange={setLinksMapping}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="text-sm font-semibold">Dedupe</div>
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                          <DedupeControls value={dedupe} onChange={setDedupe} />
+                        </div>
+                    </div>
+
+                      <div className="space-y-3">
+                        <div className="text-sm font-semibold">Point styling (Graph)</div>
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100 space-y-3">
+                          <div className="space-y-2">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Google Earth icon
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-3">
+                              {googleEarthIcons.map((p) => (
+                                <button
+                                  type="button"
+                                  key={p.url}
+                                  onClick={() => setIconUrl(p.url)}
+                                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition hover:border-cyan-400 hover:ring-2 hover:ring-cyan-100 ${
+                                    iconUrl === p.url
+                                      ? "border-cyan-400 ring-2 ring-cyan-100 bg-cyan-50/60"
+                                      : "border-slate-200 bg-slate-50"
+                                  }`}
+                                >
+                                  <img
+                                    src={p.url}
+                                    alt={p.label}
+                                    className="h-6 w-6 object-contain"
+                                    loading="lazy"
+                                  />
+                                  <span className="text-slate-800">{p.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Custom URL
+                              <Input
+                                placeholder="https://example.com/icon.png"
+                                value={iconUrl}
+                                onChange={(e) => setIconUrl(e.target.value)}
+                                className="mt-1"
+                              />
+                            </label>
+                          </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Icon scale (0.1–10)
+                            </div>
+                            <Input
+                              type="number"
+                              min={0.1}
+                              max={10}
+                              step={0.1}
+                              value={iconScale}
+                              onChange={(e) => setIconScale(Number(e.target.value))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              Icon color
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="color"
+                                className="h-10 w-16 p-1"
+                                value={iconColor}
+                                onChange={(e) => setIconColor(e.target.value)}
+                              />
+                              <div className="text-xs text-slate-600">{iconColor}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-slate-500">
+                          Graph exports reuse these point settings so nodes and links stay consistent.
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                  {/* sticky action bar */}
+                  <div className="sticky bottom-4 z-10 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-lg backdrop-blur">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          {activeMeta?.icon}
+                          {activeMeta?.title} export
+                          <Badge
+                            variant={
+                              activeMeta?.ready ? "secondary" : "outline"
+                            }
+                            className="ml-1"
+                          >
+                            {activeMeta?.ready ? "Ready" : "Not ready"}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {activeMeta?.hint} Output will download as{" "}
+                          <span className="font-medium">.kml</span>.
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={onGenerate}
+                        disabled={buttonDisabled}
+                        className="gap-2 px-6"
+                      >
+                        <Download className="h-4 w-4" />
+                        {buttonLabel}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* right: preview table */}
+              <Card className="rounded-3xl border-none bg-white/80 shadow-xl ring-1 ring-slate-100">
+                <CardHeader className="space-y-2">
+                  <CardTitle className="text-lg font-semibold text-slate-900">
+                    Data preview
+                  </CardTitle>
+                  <CardDescription className="text-slate-600">
+                    First rows from the uploaded CSV.
+                  </CardDescription>
+                </CardHeader>
+
+              <CardContent>
+                <div className="rounded-2xl border border-slate-200/80 bg-white/80">
+                  <ScrollArea className="h-[520px] w-full">
+                    <div className="min-w-[1400px] p-3">
+                      <div className="overflow-x-auto rounded-xl shadow-sm ring-1 ring-slate-100">
+                        <CsvPreviewTable
+                          headers={preview.headers}
+                          rows={preview.rows}
+                        />
+                      </div>
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                </div>
+
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    Tip: if your CSV is wide, scroll horizontally inside the
+                    table.
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

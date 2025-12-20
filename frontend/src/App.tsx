@@ -5,7 +5,6 @@ import type {
   Preview,
   DedupeConfig,
   GraphMapping,
-  GraphNodeSpec,
 } from "./types/csv2kml";
 import {
   csvPreview,
@@ -18,10 +17,19 @@ import { FileUpload } from "./components/FileUpload";
 import { ErrorBanner } from "./components/ErrorBanner";
 import { MappingForm } from "./components/MappingForm";
 import { CsvPreviewTable } from "./components/CsvPreviewTable";
-import { Tabs } from "./components/Tabs";
 import { LinksMappingForm } from "./components/LinksMappingForm";
 import { DedupeControls } from "./components/DedupeControls";
 import { GraphNodesForm } from "./components/GraphNodesForm";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 function isValidHexColor(v: string) {
   return /^#[0-9a-fA-F]{6}$/.test(v);
@@ -40,14 +48,14 @@ export default function App() {
   // Points styling
   const [iconUrl, setIconUrl] = useState("");
   const [iconScale, setIconScale] = useState<number>(1.0);
-  const [iconColor, setIconColor] = useState("#00AAFF"); // ✅ fixed
+  const [iconColor, setIconColor] = useState("#00AAFF");
 
   // UI state
   const [error, setError] = useState("");
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingKml, setLoadingKml] = useState(false);
 
-  // Tabs
+  // Tabs (single source of truth, used by shadcn Tabs)
   const [activeTab, setActiveTab] = useState<"points" | "links" | "graph">(
     "points"
   );
@@ -64,7 +72,7 @@ export default function App() {
     line_width: 2.0,
   });
 
-  // Graph
+  // Graph nodes
   const [graphNodeA, setGraphNodeA] = useState({
     name_col: "",
     lat_col: "",
@@ -76,6 +84,7 @@ export default function App() {
     lon_col: "",
   });
 
+  // Dedupe
   const [dedupe, setDedupe] = useState<DedupeConfig>({
     mode: "coords",
     precision: 6,
@@ -97,29 +106,34 @@ export default function App() {
   }, [file, preview, linksMapping]);
 
   const canGenerateGraph = useMemo(() => {
-    const aOk = graphNodeA.name_col && graphNodeA.lat_col && graphNodeA.lon_col;
-    const bOk = graphNodeB.name_col && graphNodeB.lat_col && graphNodeB.lon_col;
-    return !!file && !!preview && !!aOk && !!bOk && canGenerateLinks;
+    const aOk = !!(
+      graphNodeA.name_col &&
+      graphNodeA.lat_col &&
+      graphNodeA.lon_col
+    );
+    const bOk = !!(
+      graphNodeB.name_col &&
+      graphNodeB.lat_col &&
+      graphNodeB.lon_col
+    );
+    return !!file && !!preview && aOk && bOk && canGenerateLinks;
   }, [file, preview, graphNodeA, graphNodeB, canGenerateLinks]);
 
   async function onSelectFile(f: File | null) {
-    // Reset UI state
     setError("");
     setPreview(null);
     setActiveTab("points");
 
-    // Reset points mapping
+    // reset points
     setNameCol("");
     setLatCol("");
     setLonCol("");
     setDescCols([]);
-
-    // Reset points styling
     setIconUrl("");
     setIconScale(1.0);
     setIconColor("#00AAFF");
 
-    // Reset links mapping
+    // reset links
     setLinksMapping({
       a_lat_col: "",
       a_lon_col: "",
@@ -131,9 +145,9 @@ export default function App() {
       line_width: 2.0,
     });
 
+    // reset graph
     setGraphNodeA({ name_col: "", lat_col: "", lon_col: "" });
     setGraphNodeB({ name_col: "", lat_col: "", lon_col: "" });
-
     setDedupe({ mode: "coords", precision: 6 });
 
     setFile(f);
@@ -144,13 +158,13 @@ export default function App() {
       const p = await csvPreview(f, 20);
       setPreview(p);
 
-      // Auto-pick common headers for POINTS
       const lower = p.headers.map((h) => h.toLowerCase());
       const pick = (candidates: string[]) => {
         const idx = lower.findIndex((h) => candidates.includes(h));
         return idx >= 0 ? p.headers[idx] : "";
       };
 
+      // points
       setNameCol(
         pick(["name", "nome", "point", "punto", "node", "nodo"]) ||
           p.headers[0] ||
@@ -159,6 +173,7 @@ export default function App() {
       setLatCol(pick(["lat", "latitude", "latitudine"]));
       setLonCol(pick(["lon", "lng", "longitude", "longitudine"]));
 
+      // graph nodes A/B
       setGraphNodeA({
         name_col: pick(["name_a", "a_name", "from_name", "node_a"]),
         lat_col: pick(["a_lat", "lat_a", "from_lat"]),
@@ -171,7 +186,7 @@ export default function App() {
         lon_col: pick(["b_lon", "lng_b", "lon_b", "to_lon", "to_lng"]),
       });
 
-      // optional
+      // links auto-pick (optional)
       const pickExact = (candidates: string[]) => {
         const idx = lower.findIndex((h) => candidates.includes(h));
         return idx >= 0 ? p.headers[idx] : "";
@@ -199,7 +214,6 @@ export default function App() {
     if (!file) return;
     setError("");
 
-    // ---- Helpers -------------------------------------------------
     const validatePointsStyling = () => {
       if (iconScale <= 0 || iconScale > 10) {
         setError("icon_scale must be between 0 and 10");
@@ -233,37 +247,28 @@ export default function App() {
         lon_col: lonCol,
         description_cols: descCols,
       };
-
       const trimmedUrl = iconUrl.trim();
       if (trimmedUrl) mapping.icon_url = trimmedUrl;
       if (iconScale !== 1.0) mapping.icon_scale = iconScale;
       if (iconColor) mapping.icon_color = iconColor;
-
       return mapping;
     };
 
-    const buildLinksMapping = (): LinksMapping => {
-      return {
-        ...linksMapping,
-        description_cols: linksMapping.description_cols ?? [],
-        line_color: linksMapping.line_color ?? "#00AAFF",
-        line_width: linksMapping.line_width ?? 2.0,
-      };
-    };
+    const buildLinksMapping = (): LinksMapping => ({
+      ...linksMapping,
+      description_cols: linksMapping.description_cols ?? [],
+      line_color: linksMapping.line_color ?? "#00AAFF",
+      line_width: linksMapping.line_width ?? 2.0,
+    });
 
-    // ---- Validation ----------------------------------------------
-    // Points tab needs point validation
-    // Links tab needs link validation
-    // Graph tab needs BOTH
+    // validation by tab
     if (activeTab === "points") {
       if (!validatePointsStyling()) return;
     } else if (activeTab === "links") {
       if (!validateLinksStyling()) return;
     } else {
-      // graph
       if (!validatePointsStyling()) return;
       if (!validateLinksStyling()) return;
-      // Optional dedupe validation
       if (
         dedupe.mode === "coords" &&
         (dedupe.precision < 0 || dedupe.precision > 12)
@@ -273,26 +278,29 @@ export default function App() {
       }
     }
 
-    // ---- Generate -------------------------------------------------
     try {
       setLoadingKml(true);
 
       if (activeTab === "points") {
-        const mapping = buildPointsMapping();
-        const { blob, filename } = await generateKmlPoints(file, mapping);
+        const { blob, filename } = await generateKmlPoints(
+          file,
+          buildPointsMapping()
+        );
         downloadBlob(blob, filename);
         return;
       }
 
       if (activeTab === "links") {
-        const mapping = buildLinksMapping();
-        const { blob, filename } = await generateKmlLinks(file, mapping);
+        const { blob, filename } = await generateKmlLinks(
+          file,
+          buildLinksMapping()
+        );
         downloadBlob(blob, filename);
         return;
       }
 
-      // activeTab === "graph"
-      const graphMapping = {
+      // graph
+      const graphMapping: GraphMapping = {
         points: {
           nodes: [graphNodeA, graphNodeB],
           description_cols: descCols,
@@ -330,147 +338,161 @@ export default function App() {
     : "Generate Graph KML";
 
   return (
-    <div
-      style={{
-        padding: 24,
-        maxWidth: 1100,
-        margin: "0 auto",
-        fontFamily: "system-ui",
-      }}
-    >
-      <h1 style={{ marginBottom: 8 }}>csv2kml</h1>
-      <p style={{ marginTop: 0, color: "#555" }}>
+    <div className="mx-auto max-w-5xl p-6">
+      <div className="mb-2 text-2xl font-semibold">csv2kml</div>
+      <div className="mb-6 text-sm text-muted-foreground">
         Upload a CSV → preview → map columns → download KML.
-      </p>
+      </div>
 
       <FileUpload onSelectFile={onSelectFile} loading={loadingPreview} />
       <ErrorBanner message={error} />
 
-      {/* Tabs always visible (even before preview is okay, but you need preview to generate) */}
-      <Tabs active={activeTab} onChange={setActiveTab} />
+      {preview && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-lg">Mapping</CardTitle>
+            <CardDescription>
+              <span className="font-medium">File:</span> {preview.filename}
+              <span className="mx-2">•</span>
+              <span className="font-medium">Delimiter:</span>{" "}
+              {preview.detected_delimiter}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) =>
+                setActiveTab(v as "points" | "links" | "graph")
+              }
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="points">Points</TabsTrigger>
+                <TabsTrigger value="links">Links</TabsTrigger>
+                <TabsTrigger value="graph">Graph</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="points" className="mt-4">
+                <MappingForm
+                  headers={preview.headers}
+                  nameCol={nameCol}
+                  latCol={latCol}
+                  lonCol={lonCol}
+                  descCols={descCols}
+                  onChangeName={setNameCol}
+                  onChangeLat={setLatCol}
+                  onChangeLon={setLonCol}
+                  onChangeDescCols={setDescCols}
+                  iconUrl={iconUrl}
+                  iconColor={iconColor}
+                  iconScale={iconScale}
+                  onChangeIconUrl={setIconUrl}
+                  onChangeIconColor={setIconColor}
+                  onChangeIconScale={setIconScale}
+                />
+              </TabsContent>
+
+              <TabsContent value="links" className="mt-4">
+                <LinksMappingForm
+                  headers={preview.headers}
+                  mapping={linksMapping}
+                  onChange={setLinksMapping}
+                />
+              </TabsContent>
+
+              <TabsContent value="graph" className="mt-4 space-y-6">
+                <div className="text-sm text-muted-foreground">
+                  Configure <span className="font-medium">Point A</span>,{" "}
+                  <span className="font-medium">Point B</span> and{" "}
+                  <span className="font-medium">Links</span>, then generate a
+                  single combined KML.
+                </div>
+
+                <GraphNodesForm
+                  headers={preview.headers}
+                  nodeA={graphNodeA}
+                  nodeB={graphNodeB}
+                  onChangeNodeA={setGraphNodeA}
+                  onChangeNodeB={setGraphNodeB}
+                />
+
+                <div className="rounded-lg border p-4">
+                  <div className="mb-3 font-medium">
+                    Point styling (optional)
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <label className="space-y-1">
+                      <div className="text-sm font-medium">Icon URL</div>
+                      <input
+                        className="h-9 w-full rounded-md border px-3"
+                        type="url"
+                        placeholder="https://.../icon.png"
+                        value={iconUrl}
+                        onChange={(e) => setIconUrl(e.target.value)}
+                      />
+                    </label>
+
+                    <label className="space-y-1">
+                      <div className="text-sm font-medium">Scale</div>
+                      <input
+                        className="h-9 w-full rounded-md border px-3"
+                        type="number"
+                        min={0.1}
+                        max={10}
+                        step={0.1}
+                        value={iconScale}
+                        onChange={(e) => setIconScale(Number(e.target.value))}
+                      />
+                    </label>
+
+                    <label className="space-y-1">
+                      <div className="text-sm font-medium">Color</div>
+                      <input
+                        className="h-9 w-full rounded-md border px-3"
+                        type="color"
+                        value={iconColor}
+                        onChange={(e) => setIconColor(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <LinksMappingForm
+                  headers={preview.headers}
+                  mapping={linksMapping}
+                  onChange={setLinksMapping}
+                />
+                <DedupeControls value={dedupe} onChange={setDedupe} />
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex items-center gap-3">
+              <Button onClick={onGenerate} disabled={buttonDisabled}>
+                {buttonLabel}
+              </Button>
+              <div className="text-sm text-muted-foreground">
+                Output will be downloaded as a{" "}
+                <span className="font-medium">.kml</span> file.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {preview && (
-        <>
-          <div style={{ marginBottom: 12, color: "#555" }}>
-            <b>File:</b> {preview.filename} — <b>Delimiter:</b>{" "}
-            {preview.detected_delimiter}
-          </div>
-
-          {activeTab === "points" ? (
-            <MappingForm
-              headers={preview.headers}
-              nameCol={nameCol}
-              latCol={latCol}
-              lonCol={lonCol}
-              descCols={descCols}
-              onChangeName={setNameCol}
-              onChangeLat={setLatCol}
-              onChangeLon={setLonCol}
-              onChangeDescCols={setDescCols}
-              iconUrl={iconUrl}
-              iconColor={iconColor}
-              iconScale={iconScale}
-              onChangeIconUrl={setIconUrl}
-              onChangeIconColor={setIconColor}
-              onChangeIconScale={setIconScale}
-            />
-          ) : activeTab === "links" ? (
-            <LinksMappingForm
-              headers={preview.headers}
-              mapping={linksMapping}
-              onChange={setLinksMapping}
-            />
-          ) : (
-            <>
-              <div style={{ marginBottom: 10, color: "#555" }}>
-                Configure <b>Point A</b>, <b>Point B</b> and <b>Links</b>, then
-                generate a single combined KML.
-              </div>
-
-              {/* Points A + B */}
-              <GraphNodesForm
-                headers={preview.headers}
-                nodeA={graphNodeA}
-                nodeB={graphNodeB}
-                onChangeNodeA={setGraphNodeA}
-                onChangeNodeB={setGraphNodeB}
-              />
-
-              {/* Point styling (applies to all points in graph) */}
-              <div
-                style={{
-                  marginBottom: 16,
-                  borderTop: "1px solid #eee",
-                  paddingTop: 12,
-                }}
-              >
-                <h3 style={{ margin: "8px 0" }}>Point styling (optional)</h3>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr",
-                    gap: 12,
-                  }}
-                >
-                  <label>
-                    Icon URL
-                    <input
-                      type="url"
-                      placeholder="https://.../icon.png"
-                      value={iconUrl}
-                      onChange={(e) => setIconUrl(e.target.value)}
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-
-                  <label>
-                    Scale
-                    <input
-                      type="number"
-                      min={0.1}
-                      max={10}
-                      step={0.1}
-                      value={iconScale}
-                      onChange={(e) => setIconScale(Number(e.target.value))}
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-
-                  <label>
-                    Color
-                    <input
-                      type="color"
-                      value={iconColor}
-                      onChange={(e) => setIconColor(e.target.value)}
-                      style={{ width: "100%", height: 36 }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Links */}
-              <LinksMappingForm
-                headers={preview.headers}
-                mapping={linksMapping}
-                onChange={setLinksMapping}
-              />
-
-              {/* Dedupe */}
-              <DedupeControls value={dedupe} onChange={setDedupe} />
-            </>
-          )}
-
-          <button
-            onClick={onGenerate}
-            disabled={buttonDisabled}
-            style={{ padding: "10px 16px" }}
-          >
-            {buttonLabel}
-          </button>
-
-          <CsvPreviewTable headers={preview.headers} rows={preview.rows} />
-        </>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-lg">Preview</CardTitle>
+            <CardDescription>First rows from the uploaded CSV.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <CsvPreviewTable headers={preview.headers} rows={preview.rows} />
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

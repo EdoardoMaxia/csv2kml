@@ -1,4 +1,4 @@
-type TabKey = "points" | "links";
+type TabKey = "points" | "links" | "graph";
 
 type Props = {
   active: TabKey;
@@ -28,6 +28,13 @@ export function Tabs({ active, onChange }: Props) {
         onClick={() => onChange("links")}
       >
         Links
+      </button>
+      <button
+        type="button"
+        style={btnStyle(active === "graph")}
+        onClick={() => onChange("graph")}
+      >
+        Graph
       </button>
     </div>
   );

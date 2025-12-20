@@ -1,4 +1,4 @@
-import type { PointsMapping, Preview, LinksMapping } from "../types/csv2kml";
+import type { PointsMapping, Preview, LinksMapping, GraphMapping} from "../types/csv2kml";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -67,4 +67,27 @@ export async function generateKmlLinks(file: File, mapping: LinksMapping) {
     const filename = match?.[1] ?? "links.kml";
 
     return { blob, filename}
+}
+
+export async function generateKmlGraph(file: File, mapping: GraphMapping) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("mapping", JSON.stringify(mapping));
+
+  const res = await fetch(`${API_BASE_URL}/kml/graph`, {
+    method: "POST",
+    body: fd,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(getDetailMessage("KML graph generation failed", res.status, err));
+  }
+
+  const blob = await res.blob();
+  const contentDisposition = res.headers.get("content-disposition") || "";
+  const match = contentDisposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? "graph.kml";
+
+  return { blob, filename };
 }

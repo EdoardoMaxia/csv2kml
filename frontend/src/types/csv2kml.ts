@@ -31,3 +31,31 @@ export type LinksMapping = {
     line_color?: string; // "#RRGGBB"
     line_width?: number; // default 2.0
 };
+
+export type GraphNodeSpec = {
+  name_col: string;
+  lat_col: string;
+  lon_col: string;
+};
+
+export type DedupeConfig = {
+  mode: "coords" | "name";
+  precision: number; // used when mode="coords"
+};
+
+export type GraphPointsConfig = {
+  nodes: GraphNodeSpec[];
+  description_cols: string[];
+
+  icon_url?: string;
+  icon_scale?: number;
+  icon_color?: string; // "#RRGGBB"
+};
+
+export type GraphLinksConfig = LinksMapping;
+
+export type GraphMapping = {
+  points: GraphPointsConfig;
+  links: GraphLinksConfig;
+  dedupe?: DedupeConfig;
+};

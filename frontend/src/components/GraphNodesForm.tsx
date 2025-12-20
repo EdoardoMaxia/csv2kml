@@ -20,25 +20,16 @@ function NodeBlock({
   onChange: (n: GraphNodeSpec) => void;
 }) {
   return (
-    <div
-      style={{
-        border: "1px solid #eee",
-        padding: 12,
-        borderRadius: 6,
-        marginBottom: 12,
-      }}
-    >
-      <h3 style={{ margin: "0 0 8px 0" }}>{title}</h3>
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100 space-y-3">
+      <div className="text-sm font-semibold text-slate-900">{title}</div>
 
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
-      >
-        <label>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Name column
           <select
             value={value.name_col}
             onChange={(e) => onChange({ ...value, name_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -49,12 +40,12 @@ function NodeBlock({
           </select>
         </label>
 
-        <label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Latitude column
           <select
             value={value.lat_col}
             onChange={(e) => onChange({ ...value, lat_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -65,12 +56,12 @@ function NodeBlock({
           </select>
         </label>
 
-        <label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Longitude column
           <select
             value={value.lon_col}
             onChange={(e) => onChange({ ...value, lon_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -93,11 +84,13 @@ export function GraphNodesForm({
   onChangeNodeB,
 }: Props) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      <h2 style={{ marginTop: 0 }}>Graph points</h2>
-      <div style={{ color: "#777", marginBottom: 8 }}>
-        Select columns for <b>Point A</b> and <b>Point B</b>. Both will be
-        deduplicated.
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <div className="text-sm font-semibold text-slate-900">Graph points</div>
+        <div className="text-sm text-slate-600">
+          Select columns for <b>Point A</b> and <b>Point B</b>. Both will be
+          deduplicated.
+        </div>
       </div>
 
       <NodeBlock

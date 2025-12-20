@@ -11,23 +11,16 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
     onChange({ ...mapping, ...patch });
 
   return (
-    <>
-      <h3 style={{ margin: "8px 0" }}>Links mapping</h3>
+    <div className="space-y-4">
+      <h3 className="text-sm font-semibold text-slate-900">Links mapping</h3>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-          marginBottom: 16,
-        }}
-      >
-        <label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           A latitude column
           <select
             value={mapping.a_lat_col}
             onChange={(e) => set({ a_lat_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -38,12 +31,12 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
           </select>
         </label>
 
-        <label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           A longitude column
           <select
             value={mapping.a_lon_col}
             onChange={(e) => set({ a_lon_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -54,12 +47,12 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
           </select>
         </label>
 
-        <label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           B latitude column
           <select
             value={mapping.b_lat_col}
             onChange={(e) => set({ b_lat_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -70,12 +63,12 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
           </select>
         </label>
 
-        <label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           B longitude column
           <select
             value={mapping.b_lon_col}
             onChange={(e) => set({ b_lon_col: e.target.value })}
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- select --</option>
             {headers.map((h) => (
@@ -86,14 +79,14 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
           </select>
         </label>
 
-        <label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 sm:col-span-2">
           Link name column (optional)
           <select
             value={mapping.link_name_col ?? ""}
             onChange={(e) =>
               set({ link_name_col: e.target.value || undefined })
             }
-            style={{ width: "100%" }}
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             <option value="">-- none --</option>
             {headers.map((h) => (
@@ -105,8 +98,8 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
         </label>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <label>
+      <div className="space-y-1">
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Description columns (optional)
           <select
             multiple
@@ -117,7 +110,7 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
               );
               set({ description_cols: opts });
             }}
-            style={{ width: "100%", height: 120 }}
+            className="mt-1 h-32 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 shadow-inner focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
           >
             {headers.map((h) => (
               <option key={h} value={h}>
@@ -126,34 +119,28 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
             ))}
           </select>
         </label>
-        <div style={{ color: "#777", marginTop: 6 }}>
+        <div className="text-xs text-slate-500">
           Hold <b>Ctrl</b> (Windows) / <b>Cmd</b> (Mac) to select multiple.
         </div>
       </div>
 
-      <div
-        style={{
-          marginBottom: 16,
-          borderTop: "1px solid #eee",
-          paddingTop: 12,
-        }}
-      >
-        <h3 style={{ margin: "8px 0" }}>Line style (optional)</h3>
+      <div className="space-y-3 border-t border-slate-200 pt-3">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Line style (optional)
+        </h3>
 
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-        >
-          <label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Line color
             <input
               type="color"
               value={mapping.line_color ?? "#00AAFF"}
               onChange={(e) => set({ line_color: e.target.value })}
-              style={{ width: "100%", height: 36 }}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-1 py-1"
             />
           </label>
 
-          <label>
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Line width
             <input
               type="number"
@@ -162,11 +149,11 @@ export function LinksMappingForm({ headers, mapping, onChange }: Props) {
               step={0.5}
               value={mapping.line_width ?? 2.0}
               onChange={(e) => set({ line_width: Number(e.target.value) })}
-              style={{ width: "100%" }}
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-200"
             />
           </label>
         </div>
       </div>
-    </>
+    </div>
   );
 }

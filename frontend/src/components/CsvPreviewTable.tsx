@@ -6,8 +6,10 @@ type Props = {
 export function CsvPreviewTable({ headers, rows }: Props) {
   return (
     <>
-      <h2 style={{ marginTop: 24 }}>Preview</h2>
-      <div style={{ overflowX: "auto", border: "1px solid #ddd" }}>
+      <h2 style={{ marginTop: 24, marginLeft: 20, marginBottom: 10 }}>
+        <b>Preview</b>
+      </h2>
+      <div style={{ overflowX: "auto", border: "1px solid #ddddddff" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

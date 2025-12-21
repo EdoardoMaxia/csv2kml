@@ -477,7 +477,7 @@ export default function App() {
 
                 <div className="space-y-3">
                   <div className="text-sm font-medium">2) Status</div>
-                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
                         <div className="text-sm text-muted-foreground">
@@ -558,7 +558,7 @@ export default function App() {
 
           {/* workspace */}
           {preview && (
-            <div className="grid gap-6 lg:grid-cols-[1fr_700px]">
+            <div className="grid gap-6 lg:grid-cols-[minmax(520px,1fr)_550px]">
               {/* left: mapping */}
               <Card className="rounded-3xl border-none bg-white/80 shadow-xl ring-1 ring-slate-100">
                 <CardHeader className="space-y-2">
@@ -686,8 +686,8 @@ export default function App() {
 
                       <div className="space-y-3">
                         <div className="text-sm font-semibold">Links</div>
-                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
-                        <LinksMappingForm
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                          <LinksMappingForm
                             headers={preview.headers}
                             mapping={linksMapping}
                             onChange={setLinksMapping}
@@ -700,10 +700,12 @@ export default function App() {
                         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100">
                           <DedupeControls value={dedupe} onChange={setDedupe} />
                         </div>
-                    </div>
+                      </div>
 
                       <div className="space-y-3">
-                        <div className="text-sm font-semibold">Point styling (Graph)</div>
+                        <div className="text-sm font-semibold">
+                          Point styling (Graph)
+                        </div>
                         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-100 space-y-3">
                           <div className="space-y-2">
                             <div className="text-xs uppercase tracking-wide text-slate-500">
@@ -727,7 +729,9 @@ export default function App() {
                                     className="h-6 w-6 object-contain"
                                     loading="lazy"
                                   />
-                                  <span className="text-slate-800">{p.label}</span>
+                                  <span className="text-slate-800">
+                                    {p.label}
+                                  </span>
                                 </button>
                               ))}
                             </div>
@@ -742,43 +746,48 @@ export default function App() {
                             </label>
                           </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Icon scale (0.1–10)
-                            </div>
-                            <Input
-                              type="number"
-                              min={0.1}
-                              max={10}
-                              step={0.1}
-                              value={iconScale}
-                              onChange={(e) => setIconScale(Number(e.target.value))}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="text-xs uppercase tracking-wide text-slate-500">
-                              Icon color
-                            </div>
-                            <div className="flex items-center gap-2">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1">
+                              <div className="text-xs uppercase tracking-wide text-slate-500">
+                                Icon scale (0.1–10)
+                              </div>
                               <Input
-                                type="color"
-                                className="h-10 w-16 p-1"
-                                value={iconColor}
-                                onChange={(e) => setIconColor(e.target.value)}
+                                type="number"
+                                min={0.1}
+                                max={10}
+                                step={0.1}
+                                value={iconScale}
+                                onChange={(e) =>
+                                  setIconScale(Number(e.target.value))
+                                }
                               />
-                              <div className="text-xs text-slate-600">{iconColor}</div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-xs uppercase tracking-wide text-slate-500">
+                                Icon color
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="color"
+                                  className="h-10 w-16 p-1"
+                                  value={iconColor}
+                                  onChange={(e) => setIconColor(e.target.value)}
+                                />
+                                <div className="text-xs text-slate-600">
+                                  {iconColor}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="text-xs text-slate-500">
-                          Graph exports reuse these point settings so nodes and links stay consistent.
+                          <div className="text-xs text-slate-500">
+                            Graph exports reuse these point settings so nodes
+                            and links stay consistent.
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                    </TabsContent>
+                  </Tabs>
 
                   {/* sticky action bar */}
                   <div className="sticky bottom-4 z-10 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-lg backdrop-blur">
@@ -826,20 +835,20 @@ export default function App() {
                   </CardDescription>
                 </CardHeader>
 
-              <CardContent>
-                <div className="rounded-2xl border border-slate-200/80 bg-white/80">
-                  <ScrollArea className="h-[520px] w-full">
-                    <div className="min-w-[1400px] p-3">
-                      <div className="overflow-x-auto rounded-xl shadow-sm ring-1 ring-slate-100">
-                        <CsvPreviewTable
-                          headers={preview.headers}
-                          rows={preview.rows}
-                        />
+                <CardContent>
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/80">
+                    <ScrollArea className="h-[520px] w-full">
+                      <div className="min-w-[1400px] p-3">
+                        <div className="overflow-x-auto rounded-xl shadow-sm ring-1 ring-slate-100">
+                          <CsvPreviewTable
+                            headers={preview.headers}
+                            rows={preview.rows}
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                </div>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
 
                   <div className="mt-3 text-xs text-muted-foreground">
                     Tip: if your CSV is wide, scroll horizontally inside the

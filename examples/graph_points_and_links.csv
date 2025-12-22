@@ -1,0 +1,3 @@
+name_a,a_lat,a_lon,name_b,b_lat,b_lon,description
+Rome,41.9028,12.4964,Milan,45.4642,9.1900,Primary backbone
+Milan,45.4642,9.1900,Naples,40.8518,14.2681,Secondary backbone

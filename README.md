@@ -1,131 +1,148 @@
 # csv2kml
+![CI](../../actions/workflows/ci.yml/badge.svg)
 
-A small web application to convert CSV files into KML, with full control over how CSV columns are mapped to KML points and links.
+csv2kml is a web application that converts CSV files into KML files, allowing
+full control over how CSV columns are mapped to KML points and links.
 
-Designed as a learning playground for software engineering and DevOps best practices, but also useful in real-world GIS / network planning workflows.
-
----
-
-## Features (planned)
-
-- **CSV → KML points**
-  - Upload a CSV file
-  - Map CSV columns to:
-    - point name
-    - latitude
-    - longitude
-    - description (optional, can be built from multiple columns)
-  - Configure point style (icon, color, size)
-
-- **CSV → KML links (LineString)**
-  - Define which columns represent:
-    - endpoint A (id, latitude, longitude)
-    - endpoint B (id, latitude, longitude)
-  - Configure line style (color, width, pattern)
-  - Optional link metadata (e.g. capacity, status)
-
-- **Reusable configurations**
-  - Save a mapping configuration as JSON
-  - Load an existing configuration and apply it to a new CSV
+It is designed both as:
+- a practical tool for GIS / network planning workflows
+- a learning playground for software engineering and DevOps best practices
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-- **Backend**
-  - Python
-  - FastAPI
-  - pydantic for data validation
-  - pytest for testing
+### CSV → KML Points
+- Upload a CSV file and preview its content
+- Map CSV columns to:
+  - point name
+  - latitude
+  - longitude
+  - description (optional, built from multiple columns)
+- Customize point style:
+  - icon URL
+  - color
+  - scale
 
-- **Frontend**
-  - React + TypeScript
-  - Vite
-  - A lightweight UI library (e.g. MUI / Chakra UI)
+### CSV → KML Links (LineString)
+- Generate connections between two endpoints (A → B)
+- Map CSV columns for:
+  - endpoint A (lat / lon)
+  - endpoint B (lat / lon)
+- Customize line style:
+  - color
+  - width
 
-- **DevOps / Tooling**
-  - Docker & docker-compose
-  - GitHub Actions for CI (lint + tests + build)
-  - (Future) Deployment to a cloud environment (e.g. Azure Web App / Container Apps)
-
----
-
-## High-level Architecture
-
-- The **frontend** is responsible for:
-  - CSV upload and preview (first lines)
-  - Letting the user define mapping rules and styles
-  - Sending a structured request to the backend to generate KML
-  - Handling download of the resulting KML file
-
-- The **backend** is responsible for:
-  - Validating the CSV file
-  - Translating mapping rules into an internal domain model:
-    - `Point`, `Link`, `KmlStyle`, `KmlDocument`, ...
-  - Generating KML as XML
-  - Optionally storing / loading mapping configurations
-
-Documentation for the architecture and use cases can be found in the [`docs/`](./docs) folder.
+### Graph Mode (Points + Links together)
+- Generate points and links in a single KML
+- Automatic point deduplication
+- Useful for network topology visualization
 
 ---
 
-## Project Goals
+## 📸 Screenshots
 
-This project is also meant as a sandbox to practice:
+| Upload & Preview                          | Points Mapping                            |
+| ----------------------------------------- | ----------------------------------------- |
+| ![Upload](docs/screenshots/ui-upload.png) | ![Points](docs/screenshots/ui-points.gif) |
 
-- Requirements analysis and documentation
-- Clean architecture / domain-driven design (on a small scale)
-- Good Git practices and branching strategies
-- Automated testing and CI
-- Containerization and deployment
+| Links Mapping                           | Graph Mode                              |
+| --------------------------------------- | --------------------------------------- |
+| ![Links](docs/screenshots/ui-links.gif) | ![Graph](docs/screenshots/ui-graph.gif) |
 
----
-
-## Roadmap (high level)
-
-- [ ] Initialize backend (FastAPI skeleton)
-- [ ] Initialize frontend (React + Vite + TypeScript)
-- [ ] CSV upload & preview (frontend)
-- [ ] Simple CSV → KML points conversion (backend + frontend)
-- [ ] Add styles for points
-- [ ] Add links (LineString) generation
-- [ ] Add configuration save/load
-- [ ] Improve UI/UX and validation
-- [ ] Add end-to-end tests
-- [ ] Containerization and CI/CD
+| Demo Google-Earth                   |
+| ----------------------------------- |
+| ![Links](docs/screenshots/demo.gif) |
 
 ---
 
-## Getting Started
+## 📂 Example CSV files
 
-> ⚠️ Work in progress. Instructions will be updated as the project evolves.
+Ready-to-use example CSV files are available in the [`examples/`](./examples) folder:
 
+- `points_simple.csv`
+- `links_simple.csv`
+- `graph_points_and_links.csv`
 
-## Backend – Local Development
+Each file is documented in [`examples/README.md`](./examples/README.md).
 
-### Requirements
-- Python 3.12+
+---
 
-### Setup
+## 🏗 Tech Stack
 
+### Backend
+- Python
+- FastAPI
+- Pydantic
+- Pytest
+
+### Frontend
+- React + TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
+
+### DevOps
+- Docker & docker-compose
+- GitHub Actions CI:
+ - backend tests (pytest)
+ - frontend build check
+
+---
+
+## 🚀 Quickstart (Docker)
+
+Requirements:
+- Docker
+- Docker Compose
+
+Run the full stack:
+
+```bash
+docker compose up --build
+```
+
+Then Open:
+- Frontend: http://localhost:5173
+- Backend (optional): http://localhost:8000
+
+Stop:
+```bash
+docker compose down
+```
+
+---
+
+## Local Development (optional)
+
+### Backend
 ```bash
 cd backend
 python -m venv .venv
 source .venv/bin/activate   # Windows: .\.venv\Scripts\activate
 pip install -r requirements.txt
-
-```
-
-## Run backend
-```bash
-cd backend
 uvicorn app.main:app --reload
-
 ```
 
-## Run tests
+### Frontend
 ```bash
-cd backend
-pytest
-
+cd frontend
+npm install
+npm run dev
 ```
+
+---
+
+## Project Goals
+This project is also meant to practice:
+- clean architecture and separation of concerns
+- frontend/backend contracts
+- testing and validation
+- containerization and reproducible environments
+- professional Git workflows
+
+---
+
+## License
+MIT
+

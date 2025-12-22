@@ -10,7 +10,7 @@ It is designed both as:
 
 ---
 
-## ✨ Features
+## Features
 
 ### CSV → KML Points
 - Upload a CSV file and preview its content
@@ -68,7 +68,7 @@ Each file is documented in [`examples/README.md`](./examples/README.md).
 
 ---
 
-## 🏗 Tech Stack
+## Tech Stack
 
 ### Backend
 - Python
@@ -90,7 +90,7 @@ Each file is documented in [`examples/README.md`](./examples/README.md).
 
 ---
 
-## 🚀 Quickstart (Docker)
+## Quickstart (Docker)
 
 Requirements:
 - Docker
